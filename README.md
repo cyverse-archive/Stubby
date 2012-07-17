@@ -16,4 +16,4 @@ This really, truly is a tool for development purposes only.
 * Run 'lein deps' from this project's top-level directory.
 * Run 'lein ring server' from the same directory.
 
-# For the API, see the docs for the 1.0 verision of the provenance API.
+For the API, see the docs for the 1.0 verision of the provenance API.
