@@ -3,7 +3,8 @@
         [slingshot.slingshot :only [try+]])
   (:require [compojure.route :as route]
             [compojure.handler :as handler]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [clojure.tools.logging :as log]))
 
 ;Refs that store the provenance info
 (def uuid-lookup (ref (hash-map)))
@@ -38,6 +39,7 @@
   "Performs a lookup of service-object-id. Returns its UUID if it can, a 404
    otherwise."
   [service-object-id]
+  (println (str "LOOKUP: " service-object-id))
   (if (contains? @uuid-lookup service-object-id)
     (resp 200 (jsonify :UUID (get-uuid service-object-id)))
     (resp 404 (jsonify :Status "Failed"))))
@@ -55,6 +57,7 @@
   "Figures out whether to call (do-register) or return an error response."
   [id oname desc parent]
   (try+
+    (println (str "REGISTER: " id ))
     (if (contains? @uuid-lookup id)
       (resp 200 (jsonify :UUID (get-uuid id)))
       (do-register id oname desc parent))
@@ -86,6 +89,7 @@
    or log the event."
   [uuid log-map]
   (try+
+    (println (str "LOG: " uuid " EVENT MAP: " (json/json-str log-map)) )
     (when-not (contains? @prov-logs uuid)
       (create-log uuid))
     (record-log uuid log-map)
@@ -105,7 +109,6 @@
         object_name 
         object_desc
         parent_uuid]
-       (println object_name object_desc parent_uuid)
        (register service_object_id
                  object_name
                  object_desc
