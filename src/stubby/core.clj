@@ -1,9 +1,9 @@
 (ns stubby.core
   (:use [compojure.core]
         [slingshot.slingshot :only [try+]])
-  (:require [compojure.route :as route]
+  (:require [cheshire.core :as cheshire]
+            [compojure.route :as route]
             [compojure.handler :as handler]
-            [clojure.data.json :as json]
             [clojure.tools.logging :as log]))
 
 ;Refs that store the provenance info
@@ -18,7 +18,7 @@
   (get-in @uuid-lookup [service-object-id :uuid]))
 
 ;Helper that turns a map into a JSON string.
-(def jsonify (comp json/json-str hash-map))
+(def jsonify (comp cheshire/encode hash-map))
 
 (defn resp
   "Helper function that creates a response map."
@@ -68,7 +68,7 @@
   "Records an event for the object associated with uuid."
   [uuid log-map]
   (dosync
-    (ref-set prov-logs 
+    (ref-set prov-logs
              (assoc @prov-logs uuid (conj (get @prov-logs uuid) log-map)))))
 
 (defn create-log
@@ -76,8 +76,8 @@
   [uuid]
   (dosync (ref-set prov-logs (assoc @prov-logs uuid []))))
 
-(def success-result 
-  {:Status "Success" 
+(def success-result
+  {:Status "Success"
    :Details "Provenance recorded"})
 
 (def failed-result
@@ -89,7 +89,7 @@
    or log the event."
   [uuid log-map]
   (try+
-    (println (str "LOG: " uuid " EVENT MAP: " (json/json-str log-map)) )
+    (println (str "LOG: " uuid " EVENT MAP: " (cheshire/encode log-map)))
     (when-not (contains? @prov-logs uuid)
       (create-log uuid))
     (record-log uuid log-map)
@@ -98,22 +98,22 @@
       (resp 500 (jsonify :result failed-result)))))
 
 (defroutes stubby
-  (GET "/lookup/:version" 
-       [version 
-        service_object_id] 
+  (GET "/lookup/:version"
+       [version
+        service_object_id]
        (lookup service_object_id))
-  
-  (GET "/register/:version" 
-       [version 
-        service_object_id 
-        object_name 
+
+  (GET "/register/:version"
+       [version
+        service_object_id
+        object_name
         object_desc
         parent_uuid]
        (register service_object_id
                  object_name
                  object_desc
                  parent_uuid))
-  
+
   (GET "/provenance/:version"
        [version
         uuid
@@ -124,8 +124,8 @@
         request_ipaddress
         proxy_user_id
         event_data]
-       (prov-log 
-         uuid 
+       (prov-log
+         uuid
          (hash-map :version version
                    :uuid uuid
                    :username username
@@ -135,7 +135,7 @@
                    :request_ipaddress request_ipaddress
                    :proxy_user_id proxy_user_id
                    :event_data event_data)))
-  
+
   (GET "/" [] "STUUUUUUUUUBBY!")
   (route/not-found "Page not found!"))
 
